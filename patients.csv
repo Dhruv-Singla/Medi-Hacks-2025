@@ -1,0 +1,4 @@
+patient_id,patient_name,age,gender,medical_history
+101,Jane Doe,45,Female,"History of hypothyroidism diagnosed in 2020, managed with levothyroxine. Allergic to penicillin. Reports occasional migraines."
+102,John Smith,62,Male,"Patient has Type 2 Diabetes, managed with metformin and diet. Underwent an appendectomy in 2015. History of hypertension, controlled with lisinopril."
+103,Emily White,34,Female,"Diagnosed with Generalized Anxiety Disorder (GAD) in 2022, prescribed sertraline. No major surgical history. Reports seasonal allergies."
