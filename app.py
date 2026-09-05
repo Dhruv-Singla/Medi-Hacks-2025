@@ -53,7 +53,8 @@ def generate_clarifying_questions(patient_history, current_symptoms):
     """
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            # Update to the active Llama 4 model
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
             messages=[{"role": "user", "content": prompt}],
         )
         questions = response.choices[0].message.content.strip().split("\n")
@@ -104,7 +105,8 @@ def generate_doctor_report(
     """
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            # Update to the active Llama 4 model
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
             messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content
