@@ -1,7 +1,7 @@
-import streamlit as st
-import pandas as pd
-from openai import OpenAI
 import re
+from openai import OpenAI
+import pandas as pd
+import streamlit as st
 
 st.set_page_config(page_title="AI Patient Triage System", layout="wide")
 
@@ -13,24 +13,27 @@ try:
 except (FileNotFoundError, KeyError):
     st.error("ERROR: API key not found")
     st.stop()
-    
+
+
 @st.cache_data
 def load_patient_data():
     """Loads patient data from the CSV file."""
     try:
-        return pd.read_csv('patients.csv')
+        return pd.read_csv("patients.csv")
     except FileNotFoundError:
         st.error("ERROR: patients.csv not found.")
         return None
+
 
 @st.cache_data
 def load_doctor_data():
     """Loads doctor and department data from the CSV file."""
     try:
-        return pd.read_csv('doctors.csv')
+        return pd.read_csv("doctors.csv")
     except FileNotFoundError:
         st.error("ERROR: doctors.csv not found.")
         return None
+
 
 def generate_clarifying_questions(patient_history, current_symptoms):
     """AI asks smarter, guided questions for self-examination."""
@@ -47,22 +50,26 @@ def generate_clarifying_questions(patient_history, current_symptoms):
 - Example 2 (Breathing): "Take a deep breath. Does the pain in your chest get worse?"
 - Example 3 (Dizziness): "From a sitting position, stand up slowly. Does the room feel like it's spinning?"
 - Output only the questions, numbered. Do not add any conversational text or introductions.
-
     """
     try:
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
-        questions = response.choices[0].message.content.strip().split('\n')
+        questions = response.choices[0].message.content.strip().split("\n")
         return [q.strip() for q in questions if q.strip()]
     except Exception as e:
         st.error(f"An error occurred while generating questions: {e}")
         return []
 
-def generate_doctor_report(patient_history, current_symptoms, question_answers, doctors_list_str):
+
+def generate_doctor_report(
+    patient_history, current_symptoms, question_answers, doctors_list_str
+):
     """AI generates a detailed doctor report AND a simple patient summary with refined logic."""
-    qa_summary = "\n".join([f"- {qa['question']} {qa['answer']}" for qa in question_answers])
+    qa_summary = "\n".join(
+        [f"- {qa['question']} {qa['answer']}" for qa in question_answers]
+    )
     prompt = f"""
     You are an expert Medical AI. Your task is to perform a triage analysis and generate two separate summaries.
     **CRITICAL INSTRUCTION: Prioritize the patient's current symptoms and their answers to the guided questions above all else.** Only use the patient's history for context if it is directly and obviously relevant. If the history is not relevant, you must ignore it.
@@ -97,83 +104,114 @@ def generate_doctor_report(patient_history, current_symptoms, question_answers, 
     """
     try:
         response = client.chat.completions.create(
-            # Replace the old model ID with the active one
             model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content
     except Exception as e:
         return f"An error occurred: {e}"
 
-# --- 4. FRONTEND USER INTERFACE ---
+
+# --- FRONTEND USER INTERFACE ---
 st.title("🩺 Smart AI Triage & Appointment System")
-st.markdown("This tool guides patients through self-examination and provides an instant recommendation.")
+st.markdown(
+    "This tool guides patients through self-examination and provides an instant"
+    " recommendation."
+)
 
 patient_df = load_patient_data()
 doctor_df = load_doctor_data()
 
-if 'stage' not in st.session_state:
-    st.session_state.stage = 'initial_input'
+if "stage" not in st.session_state:
+    st.session_state.stage = "initial_input"
 
 if patient_df is not None and doctor_df is not None:
     left_column, right_column = st.columns((1, 1.2))
 
     with left_column:
         st.header("Patient Input")
-        patient_name = st.selectbox("Select Patient:", patient_df['patient_name'])
-        selected_patient = patient_df[patient_df['patient_name'] == patient_name].iloc[0]
+        patient_name = st.selectbox("Select Patient:", patient_df["patient_name"])
+        selected_patient = patient_df[
+            patient_df["patient_name"] == patient_name
+        ].iloc[0]
 
         st.subheader("Existing Medical History")
-        st.info(selected_patient['medical_history'])
+        st.info(selected_patient["medical_history"])
 
-        if st.session_state.stage == 'initial_input':
+        if st.session_state.stage == "initial_input":
             symptoms_input = st.text_area("Enter Your Main Symptoms:", height=100)
             if st.button("Start Guided Examination", type="primary"):
                 if symptoms_input:
-                    st.session_state.patient_history = selected_patient['medical_history']
+                    st.session_state.patient_history = selected_patient[
+                        "medical_history"
+                    ]
                     st.session_state.initial_symptoms = symptoms_input
                     with st.spinner("AI is preparing guided questions..."):
-                        st.session_state.questions = generate_clarifying_questions(st.session_state.patient_history, st.session_state.initial_symptoms)
-                    st.session_state.stage = 'clarifying_questions'
+                        st.session_state.questions = (
+                            generate_clarifying_questions(
+                                st.session_state.patient_history,
+                                st.session_state.initial_symptoms,
+                            )
+                        )
+                    st.session_state.stage = "clarifying_questions"
                     st.rerun()
 
-        if st.session_state.stage == 'clarifying_questions':
+        if st.session_state.stage == "clarifying_questions":
             st.subheader("AI Guided Examination")
-            st.markdown("Please provide answers to the AI's questions below to help with the analysis.")
+            st.markdown(
+                "Please provide answers to the AI's questions below to help"
+                " with the analysis."
+            )
             answers = {}
             for i, question in enumerate(st.session_state.questions):
-                clean_question = re.sub(r'^\d+\.\s*', '', question)
+                clean_question = re.sub(r"^\d+\.\s*", "", question)
                 answers[i] = st.text_input(clean_question, key=f"ans_{i}")
 
             if st.button("Analyze My Case", type="primary"):
-                qa_list = [{"question": q, "answer": answers[i]} for i, q in enumerate(st.session_state.questions)]
+                qa_list = [
+                    {"question": q, "answer": answers[i]}
+                    for i, q in enumerate(st.session_state.questions)
+                ]
                 doctors_list_str = doctor_df.to_markdown(index=False)
-                with st.spinner("AI is analyzing your case and finding a specialist..."):
-                    full_report = generate_doctor_report(st.session_state.patient_history, st.session_state.initial_symptoms, qa_list, doctors_list_str)
+                with st.spinner(
+                    "AI is analyzing your case and finding a specialist..."
+                ):
+                    full_report = generate_doctor_report(
+                        st.session_state.patient_history,
+                        st.session_state.initial_symptoms,
+                        qa_list,
+                        doctors_list_str,
+                    )
                 st.session_state.full_report = full_report
-                st.session_state.stage = 'show_report'
+                st.session_state.stage = "show_report"
                 st.rerun()
 
     with right_column:
         st.header("Your Triage Result")
-        if st.session_state.stage == 'show_report':
+        if st.session_state.stage == "show_report":
             full_report = st.session_state.full_report
-            
+
             try:
                 doctor_report, patient_summary = full_report.split("---", 1)
-                patient_summary = patient_summary.replace("[PATIENT SUMMARY]", "").strip()
-                doctor_report = doctor_report.replace("[DOCTOR REPORT]", "").strip()
+                patient_summary = patient_summary.replace(
+                    "[PATIENT SUMMARY]", ""
+                ).strip()
+                doctor_report = doctor_report.replace(
+                    "[DOCTOR REPORT]", ""
+                ).strip()
             except (ValueError, AttributeError):
-                # We are changing these two lines so it prints the real error to the screen!
                 doctor_report = f"⚠️ RAW AI OUTPUT:\n\n{full_report}"
-                patient_summary = "Please check the Detailed Doctor's Report below to see the raw AI output."
-            # except (ValueError, AttributeError):
-            #     doctor_report = "Could not parse the AI's full report. The AI may be overloaded."
-            #     patient_summary = "There was an issue generating the patient summary. Please try again."
+                patient_summary = (
+                    "Please check the Detailed Doctor's Report below to see"
+                    " the raw AI output."
+                )
 
             if "Critical" in doctor_report:
                 st.error("🚨 URGENT: CRITICAL HEALTH ALERT")
-                st.markdown(f"**Based on your symptoms, the AI analysis indicates a critical situation.**")
+                st.markdown(
+                    "**Based on your symptoms, the AI analysis indicates a"
+                    " critical situation.**"
+                )
                 st.warning(patient_summary)
             else:
                 st.success("Analysis Complete")
@@ -182,9 +220,11 @@ if patient_df is not None and doctor_df is not None:
 
             with st.expander("Show Detailed Doctor's Report (For Medical Staff)"):
                 st.markdown(doctor_report)
-            
+
             if st.button("Start New Triage"):
-                st.session_state.stage = 'initial_input'
+                st.session_state.stage = "initial_input"
                 st.rerun()
         else:
-            st.info("Your analysis and doctor recommendation will appear here.")
+            st.info(
+                "Your analysis and doctor recommendation will appear here."
+            )
