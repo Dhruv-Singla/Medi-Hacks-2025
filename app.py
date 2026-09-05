@@ -51,7 +51,7 @@ def generate_clarifying_questions(patient_history, current_symptoms):
     """
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant"
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}]
         )
         questions = response.choices[0].message.content.strip().split('\n')
