@@ -163,8 +163,12 @@ if patient_df is not None and doctor_df is not None:
                 patient_summary = patient_summary.replace("[PATIENT SUMMARY]", "").strip()
                 doctor_report = doctor_report.replace("[DOCTOR REPORT]", "").strip()
             except (ValueError, AttributeError):
-                doctor_report = "Could not parse the AI's full report. The AI may be overloaded."
-                patient_summary = "There was an issue generating the patient summary. Please try again."
+                # We are changing these two lines so it prints the real error to the screen!
+                doctor_report = f"⚠️ RAW AI OUTPUT:\n\n{full_report}"
+                patient_summary = "Please check the Detailed Doctor's Report below to see the raw AI output."
+            # except (ValueError, AttributeError):
+            #     doctor_report = "Could not parse the AI's full report. The AI may be overloaded."
+            #     patient_summary = "There was an issue generating the patient summary. Please try again."
 
             if "Critical" in doctor_report:
                 st.error("🚨 URGENT: CRITICAL HEALTH ALERT")
