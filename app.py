@@ -97,7 +97,8 @@ def generate_doctor_report(patient_history, current_symptoms, question_answers, 
     """
     try:
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            # Replace the old model ID with the active one
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
